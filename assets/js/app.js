@@ -129,7 +129,28 @@ class RunMyWayApp {
             });
         });
 
+        // Gestion du menu mobile
+        this.setupMobileMenu();
+
         console.log('🔗 Événements configurés');
+    }
+
+    setupMobileMenu() {
+        const sidebar = document.getElementById('sidebar');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const sidebarClose = document.getElementById('sidebarClose');
+        const overlay = document.getElementById('overlay');
+
+        if (sidebar && sidebarToggle && sidebarClose && overlay) {
+            const toggleSidebar = () => {
+                sidebar.classList.toggle('active');
+                overlay.classList.toggle('active');
+            };
+
+            sidebarToggle.addEventListener('click', toggleSidebar);
+            sidebarClose.addEventListener('click', toggleSidebar);
+            overlay.addEventListener('click', toggleSidebar);
+        }
     }
 
     /**
@@ -843,196 +864,159 @@ class RunMyWayApp {
     }
 
     async generateRoute() {
-        console.log('🛣️ Génération du parcours...');
-        
+        console.log('🛣️ Génération du parcours avec OSRM...');
+
         if (!this.startPoint) {
-            this.showError('Veuillez définir un point de départ en cliquant sur la carte');
+            this.showError('Veuillez définir un point de départ.');
             return;
         }
 
+        this.showLoading();
+
         try {
-            this.showLoading();
-            
-            // Obtenir les paramètres
-            const distance = parseFloat(document.getElementById('targetDistance')?.value || 3);
             const mode = document.querySelector('input[name="travelMode"]:checked')?.value || 'walking';
             const returnToStart = document.getElementById('returnToStart')?.checked || true;
-            
-            console.log(`Paramètres: ${distance}km, mode: ${mode}, retour: ${returnToStart}`);
-            
-            // Générer un parcours amélioré
-            const route = await this.createSmartRoute(this.startPoint, distance, mode, returnToStart);
-            
-            if (route && route.length > 0) {
-                this.displayRoute(route, distance, mode);
-                this.hideLoading();
-                this.showResults(route, distance, mode);
-                console.log('✅ Parcours généré avec succès');
-            } else {
-                throw new Error('Impossible de générer un parcours pour cette zone');
+            const targetDistance = parseFloat(document.getElementById('targetDistance')?.value || 3);
+
+            // Définir le profil OSRM
+            const osrmProfile = (mode === 'cycling') ? 'bike' : 'foot';
+
+            // Construire la liste des points de passage
+            let waypoints = [this.startPoint];
+            this.pois.forEach(poi => waypoints.push(L.latLng(poi.lat, poi.lng)));
+            if (this.endPoint) {
+                waypoints.push(this.endPoint);
+            } else if (returnToStart) {
+                waypoints.push(this.startPoint);
             }
-            
+
+            // Si c'est une boucle simple sans POI, nous devons générer un point de retour
+            if (returnToStart && waypoints.length === 2 && !this.endPoint) {
+                // Simplification : on choisit un point à mi-distance dans une direction aléatoire
+                const bearing = Math.random() * 360;
+                const destination = this.calculateDestination(this.startPoint, bearing, targetDistance * 1000 / 2);
+                waypoints.splice(1, 0, destination);
+            }
+
+            const coordinates = waypoints.map(p => `${p.lng},${p.lat}`).join(';');
+            const apiUrl = `https://router.project-osrm.org/route/v1/${osrmProfile}/${coordinates}?overview=full&geometries=polyline`;
+
+            const response = await fetch(apiUrl);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`Erreur OSRM : ${errorData.message || response.statusText}`);
+            }
+
+            const data = await response.json();
+            if (data.code !== 'Ok' || !data.routes || data.routes.length === 0) {
+                throw new Error('Aucun itinéraire trouvé par OSRM.');
+            }
+
+            const route = data.routes[0];
+            const routeCoordinates = this.decodePolyline(route.geometry);
+
+            this.displayRoute(routeCoordinates, mode);
+            this.showResults(route, mode);
+            console.log('✅ Parcours OSRM généré avec succès');
+
         } catch (error) {
+            this.showError(error.message || 'Erreur lors de la génération du parcours.');
+            console.error('❌ Erreur génération OSRM:', error);
+        } finally {
             this.hideLoading();
-            this.showError(error.message || 'Erreur lors de la génération du parcours');
-            console.error('❌ Erreur génération:', error);
         }
     }
 
     /**
-     * Génère un parcours intelligent basé sur la distance et le mode
+     * Calcule un point de destination à partir d'un point de départ, d'un relèvement et d'une distance.
+     * @param {L.LatLng} startPoint - Point de départ.
+     * @param {number} bearing - Relèvement en degrés.
+     * @param {number} distance - Distance en mètres.
+     * @returns {L.LatLng} Le point de destination.
      */
-    async createSmartRoute(startPoint, targetDistance, mode, returnToStart) {
-        console.log(`Génération d'un parcours de ${targetDistance}km en mode ${mode}`);
-        
-        // Calculer le rayon approximatif pour la distance cible
-        const radiusKm = targetDistance / (2 * Math.PI); // Pour un cercle parfait
-        const radiusDeg = radiusKm / 111; // Conversion approximative km -> degrés
-        
-        // Ajustements selon le mode de transport
-        let routeComplexity = 8; // Nombre de points de base
-        let detourFactor = 1.0;
-        
-        switch (mode) {
-            case 'running':
-                routeComplexity = 12;
-                detourFactor = 1.2; // Plus de détours pour la course
-                break;
-            case 'cycling':
-                routeComplexity = 6;
-                detourFactor = 0.8; // Plus direct pour le vélo
-                break;
-            case 'walking':
-            default:
-                routeComplexity = 10;
-                detourFactor = 1.1;
-                break;
-        }
-        
-        const route = [];
-        const center = startPoint;
-        
-        // Génération de points de passage avec variation
-        for (let i = 0; i <= routeComplexity; i++) {
-            const angle = (i / routeComplexity) * 2 * Math.PI;
-            
-            // Variation du rayon pour rendre le parcours moins circulaire
-            const radiusVariation = 0.7 + (Math.random() * 0.6); // Entre 0.7 et 1.3
-            const currentRadius = radiusDeg * radiusVariation * detourFactor;
-            
-            // Variation angulaire pour créer des méandres
-            const angleVariation = (Math.random() - 0.5) * 0.3; // ±17 degrés
-            const finalAngle = angle + angleVariation;
-            
-            const lat = center.lat + Math.cos(finalAngle) * currentRadius;
-            const lng = center.lng + Math.sin(finalAngle) * currentRadius;
-            
-            route.push(L.latLng(lat, lng));
-        }
-        
-        // Fermer le parcours si retour au départ
-        if (returnToStart) {
-            route.push(startPoint);
-        }
-        
-        // Calculer la distance réelle
-        const actualDistance = this.calculateRouteDistance(route);
-        console.log(`Distance calculée: ${actualDistance.toFixed(2)}km (cible: ${targetDistance}km)`);
-        
-        return route;
+    calculateDestination(startPoint, bearing, distance) {
+        const R = 6371e3; // Rayon de la Terre en mètres
+        const lat1 = startPoint.lat * Math.PI / 180;
+        const lon1 = startPoint.lng * Math.PI / 180;
+        const brng = bearing * Math.PI / 180;
+
+        const lat2 = Math.asin(Math.sin(lat1) * Math.cos(distance / R) +
+                              Math.cos(lat1) * Math.sin(distance / R) * Math.cos(brng));
+        const lon2 = lon1 + Math.atan2(Math.sin(brng) * Math.sin(distance / R) * Math.cos(lat1),
+                                     Math.cos(distance / R) - Math.sin(lat1) * Math.sin(lat2));
+
+        return L.latLng(lat2 * 180 / Math.PI, lon2 * 180 / Math.PI);
     }
 
     /**
-     * Calcule la distance totale d'un parcours
+     * Décode une géométrie polyline (precision 5).
+     * @param {string} str - La chaîne polyline encodée.
+     * @returns {Array<[number, number]>} Un tableau de coordonnées [lat, lng].
      */
-    calculateRouteDistance(route) {
-        if (!route || route.length < 2) return 0;
-        
-        let totalDistance = 0;
-        for (let i = 1; i < route.length; i++) {
-            totalDistance += route[i-1].distanceTo(route[i]);
+    decodePolyline(str) {
+        let index = 0, len = str.length;
+        let lat = 0, lng = 0;
+        let array = [];
+
+        while (index < len) {
+            let b, shift = 0, result = 0;
+            do {
+                b = str.charCodeAt(index++) - 63;
+                result |= (b & 0x1f) << shift;
+                shift += 5;
+            } while (b >= 0x20);
+            let dlat = ((result & 1) ? ~(result >> 1) : (result >> 1));
+            lat += dlat;
+
+            shift = 0;
+            result = 0;
+            do {
+                b = str.charCodeAt(index++) - 63;
+                result |= (b & 0x1f) << shift;
+                shift += 5;
+            } while (b >= 0x20);
+            let dlng = ((result & 1) ? ~(result >> 1) : (result >> 1));
+            lng += dlng;
+
+            array.push([lat / 1e5, lng / 1e5]);
         }
-        
-        return totalDistance / 1000; // Conversion en kilomètres
+        return array;
     }
 
-    /**
-     * Affiche le parcours sur la carte
-     */
-    displayRoute(route, targetDistance, mode) {
-        // Supprimer l'ancien parcours
+    displayRoute(routeCoordinates, mode) {
         if (this.routePolyline) {
             this.map.removeLayer(this.routePolyline);
         }
 
-        // Couleur selon le mode
-        let routeColor = '#8B5CF6';
-        switch (mode) {
-            case 'running':
-                routeColor = '#EF4444'; // Rouge pour course
-                break;
-            case 'cycling':
-                routeColor = '#10B981'; // Vert pour vélo
-                break;
-            case 'walking':
-            default:
-                routeColor = '#8B5CF6'; // Violet pour marche
-                break;
-        }
+        let routeColor = '#8B5CF6'; // Violet pour marche
+        if (mode === 'running') routeColor = '#EF4444'; // Rouge pour course
+        if (mode === 'cycling') routeColor = '#10B981'; // Vert pour vélo
 
-        // Créer la polyline
-        this.routePolyline = L.polyline(route, {
+        this.routePolyline = L.polyline(routeCoordinates, {
             color: routeColor,
-            weight: 4,
-            opacity: 0.8,
-            smoothFactor: 1
+            weight: 5,
+            opacity: 0.8
         }).addTo(this.map);
 
-        // Ajouter des marqueurs aux points clés
-        const midPoint = Math.floor(route.length / 2);
-        if (route[midPoint]) {
-            L.circleMarker(route[midPoint], {
-                radius: 6,
-                fillColor: routeColor,
-                color: 'white',
-                weight: 2,
-                opacity: 1,
-                fillOpacity: 0.8
-            }).addTo(this.map).bindPopup(`Point intermédiaire`);
-        }
-
-        // Ajuster la vue
-        this.map.fitBounds(this.routePolyline.getBounds(), { 
-            padding: [20, 20] 
-        });
+        this.map.fitBounds(this.routePolyline.getBounds(), { padding: [40, 40] });
     }
 
-    createTestRoute() {
-        // Méthode obsolète - remplacée par createSmartRoute
-        console.warn('createTestRoute est obsolète, utiliser createSmartRoute');
-    }
-
-    showResults(route, targetDistance, mode) {
+    showResults(route, mode) {
         const resultsSection = document.getElementById('resultsSection');
-        if (resultsSection) {
-            resultsSection.style.display = 'block';
-        }
+        if (!resultsSection) return;
 
-        // Calculer les statistiques réelles
-        const actualDistance = this.calculateRouteDistance(route);
-        const duration = this.calculateDuration(actualDistance, mode);
+        resultsSection.style.display = 'block';
+
+        const actualDistance = route.distance / 1000; // en km
+        const duration = route.duration; // en secondes
+        const targetDistance = parseFloat(document.getElementById('targetDistance')?.value || 0);
         const deviation = Math.abs(actualDistance - targetDistance);
 
-        // Mettre à jour les statistiques
-        const distanceResult = document.getElementById('distanceResult');
-        const durationResult = document.getElementById('durationResult');
-        const deviationResult = document.getElementById('deviationResult');
+        document.getElementById('distanceResult').textContent = `${actualDistance.toFixed(1)} km`;
+        document.getElementById('durationResult').textContent = this.formatDuration(duration / 60); // convertir en minutes
+        document.getElementById('deviationResult').textContent = `± ${deviation.toFixed(1)} km`;
 
-        if (distanceResult) distanceResult.textContent = `${actualDistance.toFixed(1)} km`;
-        if (durationResult) durationResult.textContent = this.formatDuration(duration);
-        if (deviationResult) deviationResult.textContent = `${deviation.toFixed(1)} km`;
-
-        console.log(`📊 Statistiques: ${actualDistance.toFixed(1)}km en ${this.formatDuration(duration)}`);
+        console.log(`📊 Statistiques: ${actualDistance.toFixed(1)}km, ${this.formatDuration(duration / 60)}`);
     }
 
     /**

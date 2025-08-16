@@ -78,13 +78,81 @@ html, body {
     height: 100%;
 }
 
-/* Masquer les contrôles non implémentés */
+/* Styles pour le responsive et les contrôles mobiles */
 .sidebar-toggle,
 .mobile-menu-toggle,
-.sidebar-close,
+.sidebar-close {
+    display: none; /* Cachés par défaut, affichés via media queries */
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 1100;
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+}
+
+.sidebar-close {
+    left: auto;
+    right: 15px;
+}
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+.overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Cacher les contrôles flottants non utilisés pour le moment */
 .mobile-floating-controls,
 .mini-settings-panel,
-.bottom-sheet,
-.overlay {
-    display: none !important;
+.bottom-sheet {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100%;
+        z-index: 1000;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease-in-out;
+        will-change: transform;
+        border-right: 1px solid var(--border-color);
+    }
+
+    .sidebar.active {
+        transform: translateX(0);
+    }
+
+    .sidebar-toggle,
+    .mobile-menu-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .sidebar-close {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
 }
