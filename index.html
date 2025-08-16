@@ -3,198 +3,280 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RunMyWay - Générateur de parcours</title>
+    <meta name="description" content="RunMyWay - Générateur de parcours personnalisés pour la course à pied, marche et vélo. Découvrez des itinéraires adaptés avec points d'intérêt.">
+    <meta name="keywords" content="parcours running, course à pied, générateur itinéraire, sport, vélo, marche">
+    <meta name="author" content="RunMyWay">
+    <meta name="robots" content="index, follow">
+    
+    <title>RunMyWay - Générateur de parcours personnalisés</title>
+    
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    
+    <!-- Critical CSS -->
+    <link rel="preload" href="assets/css/core.css" as="style">
+    <link rel="stylesheet" href="assets/css/core.css">
     
     <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="preload" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"></noscript>
     
-    <!-- Modern CSS -->
-    <link rel="stylesheet" href="assets/css/styles.css">
+    <!-- Component CSS -->
+    <link rel="stylesheet" href="assets/css/components.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
     
     <!-- Font Awesome pour les icônes -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-Avb2QiuDEEvB4bZJYdft2mNjVShBftLdPG8FJ0V7irTLQ8Uo0qcPxh4Plq7G5tGm0rU+1SPhVotteLpBERwTkw==" crossorigin="anonymous">
 </head>
 <body>
+    <!-- Skip to content pour l'accessibilité -->
+    <a href="#map" class="skip-link">Aller au contenu principal</a>
+    
+    <!-- Sidebar Toggle Button -->
+    <button class="sidebar-toggle" id="sidebarToggle" aria-label="Ouvrir/fermer le panneau de configuration" aria-expanded="false">
+        <i class="fas fa-bars" aria-hidden="true"></i>
+    </button>
+    
     <!-- Mobile Menu Toggle -->
-    <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Menu">
-        <i class="fas fa-bars"></i>
+    <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Ouvrir le menu de navigation" aria-expanded="false">
+        <i class="fas fa-bars" aria-hidden="true"></i>
     </button>
 
     <div class="app-container">
         <!-- Sidebar Panel -->
-        <aside class="sidebar" id="sidebar">
+        <aside class="sidebar" id="sidebar" role="complementary" aria-label="Configuration du parcours">
             <div class="sidebar-header">
                 <div class="logo">
-                    <i class="fas fa-running"></i>
+                    <i class="fas fa-running" aria-hidden="true"></i>
                     <h1>RunMyWay</h1>
                 </div>
                 <p class="tagline">Générateur de parcours personnalisés</p>
                 
+                
                 <!-- Mobile close button -->
-                <button class="sidebar-close" id="sidebarClose" aria-label="Fermer">
-                    <i class="fas fa-times"></i>
+                <button class="sidebar-close" id="sidebarClose" aria-label="Fermer le panneau de configuration">
+                    <i class="fas fa-times" aria-hidden="true"></i>
                 </button>
             </div>
 
             <div class="sidebar-content">
-                <!-- Instructions Card -->
-                <div class="info-card">
-                    <div class="info-card-header">
-                        <i class="fas fa-info-circle"></i>
-                        <h3>Comment utiliser</h3>
+                <!-- Route Section -->
+                <section class="form-section route-section">
+                    <div class="section-divider">
+                        <span class="section-label">Itinéraire</span>
                     </div>
-                    <div class="info-card-content">
-                        <p>Cliquez sur la carte pour définir votre départ ou saisissez une adresse. Clic droit pour supprimer un marqueur.</p>
-                    </div>
-                </div>
-
-                <!-- Start Point Section -->
-                <section class="form-section accordion-section">
-                    <div class="section-header accordion-header" data-target="start-section">
-                        <i class="fas fa-map-marker-alt"></i>
-                        <h3>Point de départ</h3>
-                        <i class="fas fa-chevron-down accordion-chevron"></i>
-                    </div>
-                    <div class="accordion-content" id="start-section">
-                        <div class="form-group">
-                            <label for="startAddress">Adresse de départ</label>
+                    
+                    <!-- Simplified Route Inputs -->
+                    <div class="route-inputs">
+                        <div class="route-input-group">
                             <div class="input-with-icon">
-                                <input type="text" id="startAddress" placeholder="Ex: Place de la République, Paris">
-                                <i class="fas fa-location-dot"></i>
+                                <input type="text" id="startAddress" placeholder="Point de départ">
+                                <i class="fas fa-circle start-dot"></i>
                             </div>
                             <div class="address-suggestions" id="startAddressSuggestions"></div>
                         </div>
-                        <button class="btn btn-secondary btn-block" id="useLocationBtn">
-                            <i class="fas fa-crosshairs"></i>
-                            Utiliser ma position
-                        </button>
-                    </div>
-                </section>
-
-                <!-- End Point Section -->
-                <section class="form-section accordion-section">
-                    <div class="section-header accordion-header" data-target="end-section">
-                        <i class="fas fa-map-marker"></i>
-                        <h3>Point d'arrivée</h3>
-                        <span class="section-hint">(optionnel - retour au départ par défaut)</span>
-                        <i class="fas fa-chevron-down accordion-chevron"></i>
-                    </div>
-                    <div class="accordion-content collapsed" id="end-section">
-                        <div class="form-group">
-                            <label for="endAddress">Adresse d'arrivée</label>
+                        
+                        <div class="route-connector">
+                            <div class="connector-line"></div>
+                            <button class="location-btn" id="useLocationBtn" title="Utiliser ma position">
+                                <i class="fas fa-crosshairs"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="route-input-group">
                             <div class="input-with-icon">
-                                <input type="text" id="endAddress" placeholder="Ex: Gare du Nord, Paris">
-                                <i class="fas fa-flag-checkered"></i>
+                                <input type="text" id="endAddress" placeholder="Point d'arrivée (optionnel)">
+                                <i class="fas fa-circle end-dot"></i>
                             </div>
                             <div class="address-suggestions" id="endAddressSuggestions"></div>
                         </div>
-                        <div class="form-group">
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="returnToStart" checked>
-                                <span class="checkmark"></span>
-                                Revenir au point de départ
-                            </label>
-                        </div>
+                    </div>
+                    
+                    <!-- Simple Toggle -->
+                    <div class="route-toggle">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="returnToStart" checked>
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">Retour au départ</span>
+                        </label>
                     </div>
                 </section>
 
-                <!-- POI Categories Section -->
-                <section class="form-section accordion-section">
-                    <div class="section-header accordion-header" data-target="poi-section">
-                        <i class="fas fa-map-pin"></i>
-                        <h3>Catégories de points d'intérêt</h3>
-                        <i class="fas fa-chevron-down accordion-chevron"></i>
+                <!-- POI Management Section -->
+                <section class="form-section poi-management-section">
+                    <div class="section-divider">
+                        <span class="section-label">Points d'intérêt</span>
                     </div>
-                    <div class="accordion-content collapsed" id="poi-section">
-                        <div class="poi-grid" id="poiCheckboxes">
-                            <!-- POI categories will be generated here -->
-                        </div>
+                    
+                    <!-- POI Tabs -->
+                    <div class="poi-tabs">
+                        <button class="poi-tab active" data-tab="categories">
+                            <i class="fas fa-layer-group"></i>
+                            <span>Catégories</span>
+                        </button>
+                        <button class="poi-tab" data-tab="custom">
+                            <i class="fas fa-plus"></i>
+                            <span>Personnalisé</span>
+                        </button>
                     </div>
-                </section>
-
-                <!-- Custom POI Section -->
-                <section class="form-section accordion-section">
-                    <div class="section-header accordion-header" data-target="custom-poi-section">
-                        <i class="fas fa-plus-circle"></i>
-                        <h3>Ajouter un lieu spécifique</h3>
-                        <i class="fas fa-chevron-down accordion-chevron"></i>
-                    </div>
-                    <div class="accordion-content collapsed" id="custom-poi-section">
-                        <div class="form-group">
-                            <label for="poiInput">Lieu personnalisé</label>
-                            <div class="input-with-button">
-                                <input type="text" id="poiInput" placeholder="Ex: Tour Eiffel, Parc des Buttes-Chaumont">
-                                <button type="button" id="addPOIBtn" class="btn btn-secondary btn-icon">
-                                    <i class="fas fa-plus"></i>
-                                </button>
+                    
+                    <!-- POI Content -->
+                    <div class="poi-content">
+                        <!-- Categories Tab -->
+                        <div class="poi-tab-content active" id="categories-tab">
+                            <!-- Main Categories -->
+                            <div class="poi-presets">
+                                <div class="preset-buttons">
+                                    <button class="preset-btn" data-preset="nature">
+                                        <i class="fas fa-leaf"></i>
+                                        <span>Nature</span>
+                                    </button>
+                                    <button class="preset-btn" data-preset="culture">
+                                        <i class="fas fa-university"></i>
+                                        <span>Culture</span>
+                                    </button>
+                                    <button class="preset-btn" data-preset="sport">
+                                        <i class="fas fa-running"></i>
+                                        <span>Sport</span>
+                                    </button>
+                                    <button class="preset-btn" data-preset="panorama">
+                                        <i class="fas fa-mountain"></i>
+                                        <span>Panorama</span>
+                                    </button>
+                                    <button class="preset-btn" data-preset="eau">
+                                        <i class="fas fa-tint"></i>
+                                        <span>Points d'eau</span>
+                                    </button>
+                                    <button class="preset-btn" data-preset="shopping">
+                                        <i class="fas fa-shopping-bag"></i>
+                                        <span>Shopping</span>
+                                    </button>
+                                </div>
                             </div>
-                            <div class="poi-suggestions" id="poiSuggestions"></div>
+                            
+                            <!-- POI Grid (hidden for advanced users) -->
+                            <div class="poi-grid" id="poiCheckboxes" style="display: none;">
+                                <!-- POI categories will be generated here -->
+                            </div>
                         </div>
-                        <div class="poi-chips" id="poiChips"></div>
+                        
+                        <!-- Custom POI Tab -->
+                        <div class="poi-tab-content" id="custom-tab">
+                            <div class="form-group">
+                                <label for="poiInput">Lieu personnalisé</label>
+                                <div class="input-with-button">
+                                    <input type="text" id="poiInput" placeholder="Ex: Tour Eiffel, Parc des Buttes-Chaumont">
+                                    <button type="button" id="addPOIBtn" class="btn btn-secondary btn-icon">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                                <div class="poi-suggestions" id="poiSuggestions"></div>
+                            </div>
+                            <div class="poi-chips" id="poiChips"></div>
+                        </div>
                     </div>
                 </section>
 
                 <!-- Route Settings Section - Always visible -->
                 <section class="form-section">
-                    <div class="section-header">
-                        <i class="fas fa-sliders-h"></i>
-                        <h3>Paramètres du parcours</h3>
+                    <div class="section-divider">
+                        <span class="section-label">Paramètres</span>
                     </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="targetDistance">Distance cible (km)</label>
-                            <div class="input-with-icon">
-                                <input type="number" id="targetDistance" value="5" min="1" max="50" step="0.5">
-                                <i class="fas fa-ruler"></i>
-                            </div>
+                    
+                    <!-- Travel Mode Toggle -->
+                    <div class="parameter-group">
+                        <label class="parameter-label">Mode de déplacement</label>
+                        <div class="mode-toggle-group">
+                            <input type="radio" id="mode-walking" name="travelMode" value="walking" checked>
+                            <label for="mode-walking" class="mode-toggle">
+                                <i class="fas fa-walking"></i>
+                                <span>Marche</span>
+                            </label>
+                            
+                            <input type="radio" id="mode-running" name="travelMode" value="running">
+                            <label for="mode-running" class="mode-toggle">
+                                <i class="fas fa-running"></i>
+                                <span>Course</span>
+                            </label>
+                            
+                            <input type="radio" id="mode-cycling" name="travelMode" value="cycling">
+                            <label for="mode-cycling" class="mode-toggle">
+                                <i class="fas fa-bicycle"></i>
+                                <span>Vélo</span>
+                            </label>
                         </div>
-                        <div class="form-group">
-                            <label for="travelMode">Mode de déplacement</label>
-                            <div class="select-wrapper">
-                                <select id="travelMode">
-                                    <option value="foot">🏃 Course/Marche</option>
-                                    <option value="cycling">🚴 Vélo</option>
-                                </select>
-                                <i class="fas fa-chevron-down"></i>
+                    </div>
+                    
+                    <!-- Distance Slider -->
+                    <div class="parameter-group">
+                        <div class="parameter-header">
+                            <label for="targetDistance">Distance</label>
+                            <span class="parameter-value" id="distanceValue">3 km</span>
+                        </div>
+                        <div class="slider-container">
+                            <input type="range" id="targetDistance" min="1" max="10" value="3" step="0.5" class="distance-slider">
+                            <div class="slider-labels">
+                                <span>1km</span>
+                                <span id="maxLabel">10km</span>
                             </div>
                         </div>
                     </div>
                 </section>
 
                 <!-- Action Buttons -->
-                <div class="action-buttons">
-                    <button class="btn btn-primary btn-block btn-lg" id="generateBtn">
-                        <i class="fas fa-route"></i>
-                        Générer le parcours
-                    </button>
-                    <button class="btn btn-outline btn-block" id="resetBtn">
-                        <i class="fas fa-redo"></i>
-                        Réinitialiser
-                    </button>
+                <div class="action-section">
+                    <div class="section-divider">
+                        <span class="section-label">Actions</span>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="action-btn primary full-width" id="generateBtn">
+                            <i class="fas fa-play"></i>
+                            <span>Générer le parcours</span>
+                        </button>
+                        <button class="reset-btn" id="resetBtn" title="Réinitialiser">
+                            <i class="fas fa-refresh"></i>
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Results Section -->
-                <section class="results-section" id="resultsSection" style="display: none;">
-                    <div class="results-header">
-                        <i class="fas fa-chart-line"></i>
-                        <h3>Résultats du parcours</h3>
+                <!-- Results Section - Hidden by default -->
+                <div class="results-section" id="resultsSection">
+                    <div class="section-divider">
+                        <span class="section-label">Résultats</span>
                     </div>
-                    <div class="results-stats">
-                        <div class="stat-item">
-                            <div class="stat-label">Distance</div>
-                            <div class="stat-value" id="distanceResult">-</div>
+                    
+                    <!-- Success Message -->
+                    <div class="success-banner">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Parcours généré avec succès !</span>
+                    </div>
+                    
+                    <!-- Compact Stats Grid -->
+                    <div class="results-grid">
+                        <div class="result-stat">
+                            <span class="stat-value" id="distanceResult">-</span>
+                            <span class="stat-label">Distance</span>
                         </div>
-                        <div class="stat-item">
-                            <div class="stat-label">Durée estimée</div>
-                            <div class="stat-value" id="durationResult">-</div>
+                        <div class="result-stat">
+                            <span class="stat-value" id="durationResult">-</span>
+                            <span class="stat-label">Durée</span>
+                        </div>
+                        <div class="result-stat">
+                            <span class="stat-value" id="deviationResult">-</span>
+                            <span class="stat-label">Écart</span>
                         </div>
                     </div>
-                    <div class="route-explanation" id="routeExplanation"></div>
-                    <button class="btn btn-success btn-block" id="exportBtn">
-                        <i class="fas fa-download"></i>
-                        Exporter GPX
-                    </button>
-                </section>
+                    
+                    <!-- Actions -->
+                    <div class="result-actions">
+                        <button class="export-btn" id="exportBtn">
+                            <i class="fas fa-download"></i>
+                            <span>Exporter GPX</span>
+                        </button>
+                    </div>
+                </div>
 
                 <!-- Loading -->
                 <div class="loading-overlay" id="loadingOverlay">
@@ -219,8 +301,26 @@
         </aside>
 
         <!-- Map Container -->
-        <main class="map-container">
-            <div id="map" class="map"></div>
+        <main class="map-container" id="mapContainer" role="main" aria-label="Carte interactive">
+            <div id="map" class="map" role="application" aria-label="Carte interactive pour la génération de parcours"></div>
+            
+            <!-- Route Info Panel -->
+            <div class="route-info-panel" id="routeInfoPanel">
+                <div class="route-info-header">
+                    <i class="fas fa-route"></i>
+                    <h4>Informations du parcours</h4>
+                </div>
+                <div class="route-info-stats">
+                    <div class="route-stat">
+                        <div class="route-stat-value" id="routeDistance">-</div>
+                        <div class="route-stat-label">Distance</div>
+                    </div>
+                    <div class="route-stat">
+                        <div class="route-stat-value" id="routeDuration">-</div>
+                        <div class="route-stat-label">Durée</div>
+                    </div>
+                </div>
+            </div>
             
             <!-- Map Controls -->
             <div class="map-controls">
@@ -341,5 +441,6 @@
     <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="assets/js/app.js"></script>
+    
 </body>
 </html>
