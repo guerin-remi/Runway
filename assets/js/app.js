@@ -878,24 +878,39 @@ class RunMyWayApp {
             const returnToStart = document.getElementById('returnToStart')?.checked || true;
             const targetDistance = parseFloat(document.getElementById('targetDistance')?.value || 3);
 
-            // Définir le profil OSRM
             const osrmProfile = (mode === 'cycling') ? 'bike' : 'foot';
 
-            // Construire la liste des points de passage
             let waypoints = [this.startPoint];
             this.pois.forEach(poi => waypoints.push(L.latLng(poi.lat, poi.lng)));
-            if (this.endPoint) {
-                waypoints.push(this.endPoint);
-            } else if (returnToStart) {
-                waypoints.push(this.startPoint);
-            }
 
-            // Si c'est une boucle simple sans POI, nous devons générer un point de retour
-            if (returnToStart && waypoints.length === 2 && !this.endPoint) {
-                // Simplification : on choisit un point à mi-distance dans une direction aléatoire
-                const bearing = Math.random() * 360;
-                const destination = this.calculateDestination(this.startPoint, bearing, targetDistance * 1000 / 2);
-                waypoints.splice(1, 0, destination);
+            const hasPois = this.pois.length > 0;
+
+            if (this.endPoint) {
+                // Case 1: Start -> POIs -> End
+                waypoints.push(this.endPoint);
+                if (returnToStart) {
+                    // Case 2: Start -> POIs -> End -> Start
+                    waypoints.push(this.startPoint);
+                }
+            } else { // No endPoint is set
+                if (returnToStart) {
+                    // Case 3: Loop from Start
+                    if (hasPois) {
+                        // Loop with POIs: Start -> POIs -> Start
+                        waypoints.push(this.startPoint);
+                    } else {
+                        // "Smart" loop with no POIs: Start -> generated point -> Start
+                        const bearing = Math.random() * 360;
+                        const destination = this.calculateDestination(this.startPoint, bearing, targetDistance * 1000 / 2);
+                        waypoints.push(destination);
+                        waypoints.push(this.startPoint); // And back to start
+                    }
+                } else {
+                    // Case 4: No endPoint and no return to start. This is not a valid route.
+                    this.showError("Veuillez définir un point d'arrivée ou cocher 'Retour au départ'.");
+                    this.hideLoading();
+                    return;
+                }
             }
 
             const coordinates = waypoints.map(p => `${p.lng},${p.lat}`).join(';');
