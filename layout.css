@@ -1,0 +1,269 @@
+/* Layout simple */
+
+/* POI Tabs et contenu */
+.poi-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.poi-tab {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    background: white;
+    border-radius: 0.5rem 0.5rem 0 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.poi-tab:hover {
+    background: var(--bg-secondary);
+}
+
+.poi-tab.active {
+    border-color: var(--primary-color);
+    border-bottom-color: white;
+    background: white;
+    color: var(--primary-color);
+    position: relative;
+    z-index: 1;
+}
+
+.poi-content {
+    border: 1px solid var(--border-color);
+    border-radius: 0 0.5rem 0.5rem 0.5rem;
+    background: white;
+    margin-top: -1px;
+}
+
+.poi-tab-content {
+    display: none;
+    padding: 1rem;
+}
+
+.poi-tab-content.active {
+    display: block;
+}
+
+/* POI Presets */
+.poi-presets {
+    margin-bottom: 1.5rem;
+}
+
+.preset-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+}
+
+.preset-btn {
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    background: white;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    text-align: center;
+}
+
+.preset-btn:hover {
+    border-color: var(--primary-color);
+    background: rgba(139, 92, 246, 0.05);
+}
+
+.preset-btn.active {
+    border-color: var(--primary-color);
+    background: rgba(139, 92, 246, 0.1);
+    color: var(--primary-color);
+}
+
+.preset-btn i {
+    font-size: 1.5rem;
+}
+
+.preset-btn span {
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+/* POI Grid (caché par défaut) */
+.poi-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+}
+
+/* POI personnalisés */
+.input-with-button {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.input-with-button input {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    outline: none;
+}
+
+.input-with-button input:focus {
+    border-color: var(--primary-color);
+}
+
+.btn-icon {
+    padding: 0.75rem;
+    min-width: auto;
+}
+
+.btn-secondary {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+    background: #E2E8F0;
+}
+
+/* POI Chips */
+.poi-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.poi-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: rgba(139, 92, 246, 0.1);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 1rem;
+    font-size: 0.85rem;
+    color: var(--primary-color);
+}
+
+.poi-chip button {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    padding: 0;
+    font-size: 0.8rem;
+}
+
+/* Suggestions */
+.address-suggestions,
+.poi-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid var(--border-color);
+    border-top: none;
+    border-radius: 0 0 0.5rem 0.5rem;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+    box-shadow: var(--shadow);
+}
+
+.suggestion-item {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.9rem;
+    transition: background-color 0.2s;
+}
+
+.suggestion-item:hover {
+    background: var(--bg-secondary);
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.suggestion-item:active {
+    background: rgba(139, 92, 246, 0.1);
+}
+
+/* Route connector */
+.route-connector {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    height: 2rem;
+}
+
+.connector-line {
+    width: 2px;
+    height: 100%;
+    background: linear-gradient(to bottom, var(--success-color), var(--error-color));
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.location-btn {
+    background: white;
+    border: 2px solid var(--border-color);
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 1;
+    transition: all 0.2s;
+}
+
+.location-btn:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+/* Route toggle */
+.route-toggle {
+    margin-top: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .preset-buttons {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+    }
+    
+    .preset-btn {
+        padding: 0.75rem 0.5rem;
+        font-size: 0.8rem;
+    }
+    
+    .preset-btn i {
+        font-size: 1.25rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .preset-buttons {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
